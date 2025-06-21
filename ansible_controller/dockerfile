@@ -1,0 +1,40 @@
+FROM python:3.11-slim
+
+#dependencies
+RUN apt-get update && \
+	apt-get install -y --no-install-recommends \
+	git \
+	ssh \
+	vim \
+	net-tools \
+	iputils-ping \
+	tcpdump \
+	telnet \
+	libssl-dev \
+	build-essential && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
+
+#install ansible plus additional networking tools
+RUN pip install --no-cache-dir --upgrade \
+	ansible \
+	netmiko \
+	ntc-ansible \
+	napalm \
+	paramiko \
+	pyats \
+	requests
+
+#install ansible collections
+RUN ansible-galaxy collection install \
+	cisco.ios \
+	junipernetworks.junos \
+	arista.eos \
+	community.general
+
+#create workspace
+RUN mkdir /workspace
+WORKDIR /workspace
+
+#default command
+CMD ["/bin/bash"]
