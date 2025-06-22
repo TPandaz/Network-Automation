@@ -1,40 +1,50 @@
 FROM python:3.11-slim
 
-#dependencies
+# Set workspace location
+ENV WORKSPACE=/ansible-workspace
+
+# Install core dependencies
 RUN apt-get update && \
-	apt-get install -y --no-install-recommends \
-	git \
-	ssh \
-	vim \
-	net-tools \
-	iputils-ping \
-	tcpdump \
-	telnet \
-	libssl-dev \
-	build-essential && \
-	apt-get clean && \
-	rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    git \
+    ssh \
+    vim \
+    net-tools \
+    iputils-ping \
+    tcpdump \
+    telnet \
+    libssl-dev \
+    build-essential && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-#install ansible plus additional networking tools
+# Install Ansible and networking tools
 RUN pip install --no-cache-dir --upgrade \
-	ansible \
-	netmiko \
-	ntc-ansible \
-	napalm \
-	paramiko \
-	pyats \
-	requests
+    ansible \
+    netmiko \
+    ntc-ansible \
+    napalm \
+    paramiko \
+    pyats \
+    requests
 
-#install ansible collections
+# Install Ansible collections
 RUN ansible-galaxy collection install \
-	cisco.ios \
-	junipernetworks.junos \
-	arista.eos \
-	community.general
+    cisco.ios \
+    junipernetworks.junos \
+    arista.eos \
+    community.general
 
-#create workspace
-RUN mkdir /workspace
-WORKDIR /workspace
+# Create workspace directory
+RUN mkdir -p ${WORKSPACE}
 
-#default command
-CMD ["/bin/bash"]
+# Clone your GitHub repository
+RUN git clone https://github.com/TPandaz/Network-Automation.git ${WORKSPACE}
+
+# Set working directory
+WORKDIR ${WORKSPACE}
+
+# Final setup script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
