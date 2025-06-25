@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
     - name: Load configs
-      include vars:
+      include_vars:
         file: "partial_mesh_variables.yml"
         name: interface_config
 
@@ -15,3 +15,6 @@
       loop: "{{ interface_config[inventory_hostname] | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
+    - name: Save configuration
+      cisco.ios.ios_config:
+        save_when: always

@@ -1,39 +1,54 @@
 all:
+  children:
+    routers:
+      hosts:
+        R1:
+        R2:
+        R3:
+        R4:
+        R5:
+        R6:
   hosts:
     R1:
       ansible_host: 192.168.122.101
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 1.1.1.1
     R2:
       ansible_host: 192.168.122.102
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 2.2.2.2
     R3:
       ansible_host: 192.168.122.103
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 3.3.3.3
     R4:
       ansible_host: 192.168.122.104
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 4.4.4.4
     R5:
       ansible_host: 192.168.122.105
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 5.5.5.5
     R6:
       ansible_host: 192.168.122.106
       ansible_user: sam
       ansible_ssh_pass: "sam"
       ansible_network_os: ios
+      ansible_connection: network_cli
       router_id: 6.6.6.6
 
