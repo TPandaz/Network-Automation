@@ -1,0 +1,17 @@
+---
+- name: configure partial mesh interfaces
+  hosts: routers
+  gather_facts: false
+  tasks:
+    - name: Load configs
+      include vars:
+        file: "partial_mesh_variables.yml"
+        name: interface_config
+
+    - name: configure interfaces
+      cisco.ios.ios_config:
+        lines: "{{ item.value }}"
+        parents: "interface {{ item.key }}"
+      loop: "{{ interface_config[inventory_hostname] | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
