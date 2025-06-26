@@ -7,29 +7,36 @@
       include_vars:
         file: "templates/bgp_variables.yml"
         name: bgp_config
+
+    - name: disable looback1 interface
+      cisco.ios.ios_config:
+        lines:
+          - no ip address
+          - shutdown
+        parents: interface Loopback1
       
     - name: configure loopback interfaces
       cisco.ios.ios_config:
-      lines:
-        - description BGP_loopback
-        - ip address {{ bgp_config.loopbacks[inventory_hostname].split('/')[0] }} {{ bgp_config.loopbacks[inventory_hostname].split('/')[1] | int | ipaddr('netmask') }}
-      parents: interface Loopback0
+        lines:
+         - description BGP_loopback
+         - ip address {{ bgp_config.loopbacks[inventory_hostname].ip }} {{ bgp_config.loopbacks[inventory_hostname].mask}}
+        parents: interface Loopback0
 
       
     - name: configure BGP process
       cisco.ios.ios_config:
         lines:
           - router bgp {{ bgp_config.as_numbers[inventory_hostname] }}
-          - bgp router-id {{ bgp_config.loopbacks[inventory_hostname].split('/')[0] }}
+          - bgp router-id {{ bgp_config.loopbacks[inventory_hostname].ip }}
           - bgp log-neighbor-changes
-          - network {{ bgp_config.loopbacks[inventory_hostname].split('/')[0] }} mask {{ bgp_config.loopbacks[inventory_hostname].split('/')[1] | int | ipaddr('netmask') }}
+          - network {{ bgp_config.loopbacks[inventory_hostname].ip }} mask {{ bgp_config.loopbacks[inventory_hostname].mask }}
           - neighbor {{ item.peer }} remote-as {{ item.remote_as }}
           - neighbor {{ item.peer }} description {{ item.description }}
           - neighbor {{ item.peer }} ebgp-multihop 2
           - neighbor {{ item.peer }} update-source Loopback0
-        loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
-        loop_control:
-          label: "{{ item.description }}"
+      loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
+      loop_control:
+        label: "{{ item.description }}"
 
     - name: configure address family
       cisco.ios.ios_config:
@@ -37,11 +44,11 @@
           - address-family ipv4
           - neighbor {{ item.peer }} activate
           - neighbor {{ item.peer }} next-hop-self
-          - network {{ net.split('/')[0] }} mask {{ net.split('/')[1] | int | ipaddr('netmask') }}
+          - network {{ net.ip }} mask {{ net.mask }}
         parents: router bgp {{ bgp_config.as_numbers[inventory_hostname] }}
-        loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
-        vars:
-          net: "{{ bgp_config.loopbacks[inventory_hostname] }}"
+      loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
+      vars:
+        net: "{{ bgp_config.loopbacks[inventory_hostname] }}"
 
     - name: Save configuration
       cisco.ios.ios_config:
