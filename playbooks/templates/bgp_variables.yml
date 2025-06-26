@@ -1,0 +1,48 @@
+as_numbers:
+  R1: 61001
+  R2: 61002
+  R3: 61003
+  R4: 61004
+  R5: 61005
+  R6: 61006
+
+bgp_peers:
+  R1:
+    - peer: 10.0.12.2
+      remote_as: 61002
+      description: TO_R2
+    - peer: 10.0.11.2
+      remote_as: 61005
+      description: TO_R5
+  R2:
+    - peer: 10.0.12.1
+      remote_as: 61001
+      description: TO_R1
+    - peer: 10.0.13.2
+      remote_as: 61003
+      description: TO_R3
+  R3:
+    - peer: 10.0.13.1
+      remote_as: 61002
+      description: TO_R2
+    - peer: 10.0.14.2
+      remote_as: 61004
+      description: TO_R4
+      
+  R4:
+    - peer: 10.0.14.1
+      remote_as: 61003
+      description: TO_R3
+    - peer: 10.0.15.2
+      remote_as: 61006
+      description: TO_R6
+      
+  R5:
+    - peer: 10.0.11.1
+      remote_as: 61001
+      description: TO_R1
+      
+  R6:
+    - peer: 10.0.15.1
+      remote_as: 61004
+      description: TO_R4
