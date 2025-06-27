@@ -1,0 +1,54 @@
+R1:
+  g3/0:
+    - description TO_R6_AS61003
+    - ip address 10.0.11.1 255.255.255.252 
+    - no shutdown
+  f1/0:
+    - description TO_R2_AS61001
+    - ip address 10.0.12.1 255.255.255.252
+    - no shutdown
+R2:
+  f1/0:
+    - description TO_R1_AS61001 
+    - ip address 10.0.12.2 255.255.255.252
+    - no shutdown
+  g3/0:
+    - description TO_R3_AS61002
+    - ip address 10.0.13.1 255.255.255.252
+    - no shutdown
+R3:
+  g3/0:
+    - description TO_R2_AS61001
+    - ip address 10.0.13.2 255.255.255.252
+    - no shutdown
+  f1/0:
+    - description TO_R4_AS61002
+    - ip address 10.0.14.1 255.255.255.252
+    - no shutdown
+R4:
+  f1/0:
+    - description TO_R3_AS61002
+    - ip address 10.0.14.2 255.255.255.252
+    - no shutdown
+  g3/0:
+    - description TO_R5_AS61003
+    - ip address 10.0.15.1 255.255.255.252
+    - no shutdown
+R5:
+  g3/0:
+    - description TO_R4_AS61002
+    - ip address 10.0.15.2 255.255.255.252
+    - no shutdown
+  f1/0:
+    - description TO_R6_AS61003
+    - ip address 10.0.16.1 255.255.255.252
+    - no shutdown
+R6:
+  f1/0:
+    - description T0_R5_AS61003
+    - ip address 10.0.16.2 255.255.255.252
+    - no shutdown
+  g3/0:
+    - description TO_R1_A61001
+    - ip address 10.0.11.2 255.255.255.252
+    - no shutdown

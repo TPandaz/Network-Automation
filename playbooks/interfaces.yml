@@ -5,7 +5,7 @@
   tasks:
     - name: Load configs
       include_vars:
-        file: "templates/partial_mesh_variables.yml"
+        file: "templates/interface_variables.yml"
         name: interface_config
 
     - name: configure interfaces
