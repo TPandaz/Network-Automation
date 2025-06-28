@@ -2,54 +2,104 @@
 - name: configure BGP routing
   hosts: routers
   gather_facts: false
+  vars:
+    bgp_config:
+      as61001:
+        asn: 61001
+        ibgp_peers:
+          - ip: 2.2.2.2
+          - ip: 1.1.1.1
+      as61002:
+        asn: 61002
+        ibgp_peers:
+          - ip: 4.4.4.4
+          - ip: 3.3.3.3
+      as61003:
+        asn: 61003
+        ibgp_peers:
+          - ip: 6.6.6.6
+          - ip: 5.5.5.5
+    
+    loopback_networks:
+      as61001:
+        - 1.1.1.1/32
+        - 2.2.2.2/32
+      as61002:
+        - 3.3.3.3/32
+        - 4.4.4.4/32
+      as61003:
+        - 5.5.5.5/32
+        - 6.6.6.6/32
+    
+    ebgp_neighbors:
+      R1:
+        - neighbor: 10.0.11.2   #R6 interface
+          remote_as: 61003
+          description: TO_R6_AS61003
+      R2:
+        - neighbor: 10.0.13.2   #R3 interface
+          remote_as: 61002
+          description: TO_R3_AS61002
+      R3:
+        - neighbor: 10.0.13.1   #R2 interface
+          remote_as: 61001
+          description: TO_R2_AS61001
+      R4:
+        - neighbor: 10.0.15.2   #R5 interface
+          remote_as: 61003
+          description: TO_R5_AS61003
+      R5:
+        - neighbor: 10.0.15.1   #R4 interface
+          remote_as: 61002
+          description: TO_R4_AS61002
+      R6:
+        - neighbor: 10.0.11.1   #R1 interface
+          remote_as: 61001
+          description: TO_R6_AS61003
+
   tasks:
-    - name: load BGP variables
-      include_vars:
-        file: "templates/bgp_variables.yml"
-        name: bgp_config
+    - name: get AS group
+      set_fact:
+        as_group: "{{group_names | select('match', 'as61.*') | first}}"
+    - name: configure BGP
+      cisco.ios.ios_config:
+        lines:
+          - router bgp {{bgp_config[as_group].asn}}
+          - bgp router-id {{hostvars[inventory_hostname].loopback_ip}}
+          - neighbor IBGP_PEER peer-group
+          - neighbor IBGP_PEER remote-as {{ bgp_config[as_group].asn }}
+          - neighbor IBGP_PEER update-source Loopback0
+          - neighbor IBGP_PEER next-hop-self
+        parents: router bgp {{ bgp_config[as_group].asn }}
+      when: as_group is defined
 
-    - name: disable looback1 interface
+    - name: configure iBGP 
       cisco.ios.ios_config:
         lines:
-          - no ip address
-          - shutdown
-        parents: interface Loopback1
-      
-    - name: configure loopback interfaces
-      cisco.ios.ios_config:
-        lines:
-         - description BGP_loopback
-         - ip address {{ bgp_config.loopbacks[inventory_hostname].ip }} {{ bgp_config.loopbacks[inventory_hostname].mask}}
-        parents: interface Loopback0
+          - neighbor {{ item.ip }} peer-group IBGP_PEER
+        parents: router bgp {{ bgp_config[as_group].asn }}
+      loop: "{{ bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) }}"
+      when: as_group is defined
 
-      
-    - name: configure BGP process
+    - name: configure eBGP
       cisco.ios.ios_config:
         lines:
-          - router bgp {{ bgp_config.as_numbers[inventory_hostname] }}
-          - bgp router-id {{ bgp_config.loopbacks[inventory_hostname].ip }}
-          - bgp log-neighbor-changes
-          - network {{ bgp_config.loopbacks[inventory_hostname].ip }} mask {{ bgp_config.loopbacks[inventory_hostname].mask }}
-          - neighbor {{ item.peer }} remote-as {{ item.remote_as }}
-          - neighbor {{ item.peer }} description {{ item.description }}
-          - neighbor {{ item.peer }} ebgp-multihop 2
-          - neighbor {{ item.peer }} update-source Loopback0
-      loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
-      loop_control:
-        label: "{{ item.description }}"
+          - neighbor {{ item.neighbor }} remote-as {{ item.remote_as }}
+          - neighbor {{ item.neighbor }} description {{ item.description }}
+        parents: router bgp {{ bgp_config[as_group].asn }}
+      loop: "{{ ebgp_neighbors[inventory_hostname] }}"
+      when: as_group is defined
 
-    - name: configure address family
+    - name: advertise loopbacks
       cisco.ios.ios_config:
         lines:
-          - address-family ipv4
-          - neighbor {{ item.peer }} activate
-          - neighbor {{ item.peer }} next-hop-self
-          - network {{ net.ip }} mask {{ net.mask }}
-        parents: router bgp {{ bgp_config.as_numbers[inventory_hostname] }}
-      loop: "{{ bgp_config.bgp_peers[inventory_hostname] }}"
-      vars:
-        net: "{{ bgp_config.loopbacks[inventory_hostname] }}"
+          - network {{ item }}
+        parents: router bgp {{ bgp_config[as_group].asn }}
+      loop: "{{ loopback_networks[as_group] }}"
+      when: as_group is defined
 
     - name: Save configuration
       cisco.ios.ios_config:
         save_when: always
+
+        
