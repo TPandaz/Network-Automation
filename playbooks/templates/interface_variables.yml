@@ -7,6 +7,9 @@ R1:
     - description TO_R2_AS61001
     - ip address 10.0.12.1 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 1.1.1.1 255.255.255.255
 R2:
   f1/0:
     - description TO_R1_AS61001 
@@ -16,6 +19,9 @@ R2:
     - description TO_R3_AS61002
     - ip address 10.0.13.1 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 2.2.2.2 255.255.255.255
 R3:
   g3/0:
     - description TO_R2_AS61001
@@ -25,6 +31,9 @@ R3:
     - description TO_R4_AS61002
     - ip address 10.0.14.1 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 3.3.3.3 255.255.255.255
 R4:
   f1/0:
     - description TO_R3_AS61002
@@ -34,6 +43,9 @@ R4:
     - description TO_R5_AS61003
     - ip address 10.0.15.1 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 4.4.4.4 255.255.255.255
 R5:
   g3/0:
     - description TO_R4_AS61002
@@ -43,6 +55,9 @@ R5:
     - description TO_R6_AS61003
     - ip address 10.0.16.1 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 5.5.5.5 255.255.255.255
 R6:
   f1/0:
     - description T0_R5_AS61003
@@ -52,3 +67,6 @@ R6:
     - description TO_R1_A61001
     - ip address 10.0.11.2 255.255.255.252
     - no shutdown
+  Loopback0:
+    - description router_loopback
+    - ip address 6.6.6.6 255.255.255.255
