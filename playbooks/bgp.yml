@@ -22,14 +22,14 @@
     
     loopback_networks:
       as61001:
-        - 1.1.1.1/32
-        - 2.2.2.2/32
+        - 1.1.1.1 mask 255.255.255.255
+        - 2.2.2.2 mask 255.255.255.255
       as61002:
-        - 3.3.3.3/32
-        - 4.4.4.4/32
+        - 3.3.3.3 mask 255.255.255.255
+        - 4.4.4.4 mask 255.255.255.255
       as61003:
-        - 5.5.5.5/32
-        - 6.6.6.6/32
+        - 5.5.5.5 mask 255.255.255.255
+        - 6.6.6.6 mask 255.255.255.255
     
     ebgp_neighbors:
       R1:
@@ -55,7 +55,7 @@
       R6:
         - neighbor: 10.0.11.1   #R1 interface
           remote_as: 61001
-          description: TO_R6_AS61003
+          description: TO_R1_AS61001
 
   tasks:
     - name: get AS group
@@ -75,11 +75,13 @@
 
     - name: configure iBGP 
       cisco.ios.ios_config:
-        lines:
+        lines: 
           - neighbor {{ item.ip }} peer-group IBGP_PEER
         parents: router bgp {{ bgp_config[as_group].asn }}
-      loop: "{{ bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) }}"
-      when: as_group is defined
+      loop: "{{ bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) | list }}"
+      when: 
+        - as_group is defined
+        - bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) | list | length > 0 
 
     - name: configure eBGP
       cisco.ios.ios_config:
