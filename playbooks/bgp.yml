@@ -1,5 +1,5 @@
 ---
-- name: configure BGP routing
+- name: Configure BGP routing with full connectivity
   hosts: routers
   gather_facts: false
   vars:
@@ -8,64 +8,63 @@
         asn: 61001
         ibgp_peers:
           - ip: 2.2.2.2
-          - ip: 1.1.1.1
       as61002:
         asn: 61002
         ibgp_peers:
           - ip: 4.4.4.4
-          - ip: 3.3.3.3
       as61003:
         asn: 61003
         ibgp_peers:
           - ip: 6.6.6.6
-          - ip: 5.5.5.5
-    
+
     loopback_networks:
       as61001:
-        - 1.1.1.1 mask 255.255.255.255
-        - 2.2.2.2 mask 255.255.255.255
+        - { network: 1.1.1.1, mask: 255.255.255.255 }
+        - { network: 2.2.2.2, mask: 255.255.255.255 }
       as61002:
-        - 3.3.3.3 mask 255.255.255.255
-        - 4.4.4.4 mask 255.255.255.255
+        - { network: 3.3.3.3, mask: 255.255.255.255 }
+        - { network: 4.4.4.4, mask: 255.255.255.255 }
       as61003:
-        - 5.5.5.5 mask 255.255.255.255
-        - 6.6.6.6 mask 255.255.255.255
-    
+        - { network: 5.5.5.5, mask: 255.255.255.255 }
+        - { network: 6.6.6.6, mask: 255.255.255.255 }
+
     ebgp_neighbors:
       R1:
-        - neighbor: 10.0.11.2   #R6 interface
+        - neighbor: 10.0.11.2
           remote_as: 61003
           description: TO_R6_AS61003
       R2:
-        - neighbor: 10.0.13.2   #R3 interface
+        - neighbor: 10.0.13.2
           remote_as: 61002
           description: TO_R3_AS61002
       R3:
-        - neighbor: 10.0.13.1   #R2 interface
+        - neighbor: 10.0.13.1
           remote_as: 61001
           description: TO_R2_AS61001
       R4:
-        - neighbor: 10.0.15.2   #R5 interface
+        - neighbor: 10.0.15.2
           remote_as: 61003
           description: TO_R5_AS61003
       R5:
-        - neighbor: 10.0.15.1   #R4 interface
+        - neighbor: 10.0.15.1
           remote_as: 61002
           description: TO_R4_AS61002
       R6:
-        - neighbor: 10.0.11.1   #R1 interface
+        - neighbor: 10.0.11.1
           remote_as: 61001
           description: TO_R1_AS61001
 
   tasks:
-    - name: get AS group
+    - name: Identify AS group membership
       set_fact:
-        as_group: "{{group_names | select('match', 'as61.*') | first}}"
-    - name: configure BGP
+        as_group: "{{ group_names | select('match', 'as61.*') | first }}"
+
+    - name: Configure BGP foundation
       cisco.ios.ios_config:
         lines:
-          - router bgp {{bgp_config[as_group].asn}}
-          - bgp router-id {{hostvars[inventory_hostname].loopback_ip}}
+          - router bgp {{ bgp_config[as_group].asn }}
+          - bgp router-id {{ hostvars[inventory_hostname].loopback_ip }}
+          - bgp log-neighbor-changes
           - neighbor IBGP_PEER peer-group
           - neighbor IBGP_PEER remote-as {{ bgp_config[as_group].asn }}
           - neighbor IBGP_PEER update-source Loopback0
@@ -73,35 +72,45 @@
         parents: router bgp {{ bgp_config[as_group].asn }}
       when: as_group is defined
 
-    - name: configure iBGP 
+    - name: Configure iBGP peers
       cisco.ios.ios_config:
-        lines: 
+        lines:
           - neighbor {{ item.ip }} peer-group IBGP_PEER
         parents: router bgp {{ bgp_config[as_group].asn }}
-      loop: "{{ bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) | list }}"
+      loop: "{{ bgp_config[as_group].ibgp_peers }}"
       when: 
         - as_group is defined
-        - bgp_config[as_group].ibgp_peers | reject('equalto', {'ip': hostvars[inventory_hostname].loopback_ip}) | list | length > 0 
+        - item.ip != hostvars[inventory_hostname].loopback_ip
 
-    - name: configure eBGP
+    - name: Configure eBGP neighbors with direct interface
       cisco.ios.ios_config:
         lines:
           - neighbor {{ item.neighbor }} remote-as {{ item.remote_as }}
           - neighbor {{ item.neighbor }} description {{ item.description }}
+          - neighbor {{ item.neighbor }} disable-connected-check
         parents: router bgp {{ bgp_config[as_group].asn }}
-      loop: "{{ ebgp_neighbors[inventory_hostname] }}"
+      loop: "{{ ebgp_neighbors[inventory_hostname] | default([]) }}"
       when: as_group is defined
 
-    - name: advertise loopbacks
+    - name: Advertise loopback networks
       cisco.ios.ios_config:
         lines:
-          - network {{ item }}
+          - network {{ item.network }} mask {{ item.mask }}
         parents: router bgp {{ bgp_config[as_group].asn }}
       loop: "{{ loopback_networks[as_group] }}"
+      when: as_group is defined
+
+    - name: Advertise directly connected networks
+      cisco.ios.ios_config:
+        lines:
+          - network {{ item.network }} mask {{ item.mask }}
+        parents: router bgp {{ bgp_config[as_group].asn }}
+      loop:
+        - { network: "10.0.11.0", mask: "255.255.255.252" }
+        - { network: "10.0.13.0", mask: "255.255.255.252" }
+        - { network: "10.0.15.0", mask: "255.255.255.252" }
       when: as_group is defined
 
     - name: Save configuration
       cisco.ios.ios_config:
         save_when: always
-
-        
