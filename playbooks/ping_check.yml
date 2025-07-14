@@ -1,7 +1,7 @@
 ---
 - name: ping loopback interfaces from each router
   hosts: routers
-  gather_facts: no
+  gather_facts: yes
 
   tasks:
     #loopback IP addresses per router
@@ -43,28 +43,32 @@
       vars:
         ansible_command_timeout: 30
 
+    - name: get current timestamp on localhost
+      delegate_to: localhost
+      command: date -Iseconds
+      register: current_time
+
     - name: generate formatted ping results
       delegate_to: localhost
       copy:
         content: |
-          #ping test
-          Timestamp: {{ ansible_date_time.iso8601 }}
+          #ping test report
+          Timestamp: {{ current_time.stdout }}
           Source Router: {{ inventory_hostname }} ({{ ansible_host }})
           Loopback IP: {{ loopback_ip }}
 
           #connectivity results
           {% for result in ping_results.results %}
-        Target: {{ result.item }}
-        Status: {% if result.packet_loss == '0%' %}SUCCESS{% else %}FAILED{% endif %}
-        Packets: {{ result.packets_transmitted }} sent / {{ result.packets_received }} received
-        Loss: {{ result.packet_loss}}
-        Latency (ms): min={{ result.rtt_min }} avg={{ result.rtt_avg}} max={{ result.rtt_max }}
-        ----------------------------------------
-        {% endfor %}
-
-        # summary
-        Succesful: {{ ping_results.results | selectattr('packet_loss', 'equalto', '0%') | list | count }}/{{ target_ips | count }}
-        Failed: {{ ping_results.results | rejectattr('packet_loss', 'equalto', '0%' | list | count }}
-      dest: "/tmp/ping_results/{{ inventory_hostname }}_ping_report_{{ ansible_date_time.date }}.txt
-
-
+          Target: {{ result.item }}
+          Status: {% if result.failed is defined and result.failed %}FAILED{% else %}SUCCESS{% endif %}
+          Output:
+          {% if result.stdout_lines is defined %}
+          {% for line in result.stdout_lines %}
+            {{ line }}
+          {% endfor %}
+          {% else %}
+            No output available
+          {% endif %}
+          ----------------------------------------
+          {% endfor %}
+        dest: "/tmp/ping_results/{{ inventory_hostname }}_ping_report_{{ current_time.stdout | regex_replace('[:T]', '_') | regex_replace('-', '') }}.txt"
