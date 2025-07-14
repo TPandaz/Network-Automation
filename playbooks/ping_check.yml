@@ -1,0 +1,70 @@
+---
+- name: ping loopback interfaces from each router
+  hosts: routers
+  gather_facts: no
+
+  tasks:
+    #loopback IP addresses per router
+    - name: set loopback IPs
+      set_fact:
+        loopback_ip: >-
+          {% if inventory_hostname == 'R1' %}1.1.1.1
+          {% elif inventory_hostname == 'R2' %}2.2.2.2
+          {% elif inventory_hostname == 'R3' %}3.3.3.3
+          {% elif inventory_hostname == 'R4' %}4.4.4.4
+          {% elif inventory_hostname == 'R5' %}5.5.5.5
+          {% elif inventory_hostname == 'R6' %}6.6.6.6{% endif %}
+
+    #create tmp directory for metrics
+    - name: create output directory
+      delegate_to: localhost
+      file:
+        path: /tmp/ping_results
+        state: directory
+        mode: '0755'
+
+    #get other router's loopback IPs
+    - name: generate list of other loopbacks
+      set_fact:
+        #filters out current router from list and stores the rest of the loopback IPs into a list:target_ips
+        target_ips: >-
+          {{ groups.routers | difference([inventory_hostname]) | map('extract', hostvars, 'loopback_ip') | select('defined') | list }}        
+
+    - name: execute ICMPs
+      cisco.ios.ios_ping:
+        dest: "{{ item }}"
+        source: "{{ loopback_ip }}"
+        count: 5
+        timeout: 2
+        state: present
+      loop: "{{ target_ips }}"
+      register: ping_results
+      ignore_errors: yes
+      vars:
+        ansible_command_timeout: 30
+
+    - name: generate formatted ping results
+      delegate_to: localhost
+      copy:
+        content: |
+          #ping test
+          Timestamp: {{ ansible_date_time.iso8601 }}
+          Source Router: {{ inventory_hostname }} ({{ ansible_host }})
+          Loopback IP: {{ loopback_ip }}
+
+          #connectivity results
+          {% for result in ping_results.results %}
+        Target: {{ result.item }}
+        Status: {% if result.packet_loss == '0%' %}SUCCESS{% else %}FAILED{% endif %}
+        Packets: {{ result.packets_transmitted }} sent / {{ result.packets_received }} received
+        Loss: {{ result.packet_loss}}
+        Latency (ms): min={{ result.rtt_min }} avg={{ result.rtt_avg}} max={{ result.rtt_max }}
+        ----------------------------------------
+        {% endfor %}
+
+        # summary
+        Succesful: {{ ping_results.results | selectattr('packet_loss', 'equalto', '0%') | list | count }}/{{ target_ips | count }}
+        Failed: {{ ping_results.results | rejectattr('packet_loss', 'equalto', '0%' | list | count }}
+      dest: "/tmp/ping_results/{{ inventory_hostname }}_ping_report_{{ ansible_date_time.date }}.txt
+
+
