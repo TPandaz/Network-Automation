@@ -12,7 +12,8 @@ RUN apt-get update && \
     tcpdump \
     telnet \
     libssl-dev \
-    build-essential && \
+    build-essential \
+    cron && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
