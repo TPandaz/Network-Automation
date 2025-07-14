@@ -43,6 +43,10 @@
       vars:
         ansible_command_timeout: 30
 
+    - name: debug ping_results structure
+      debug:
+        var: ping_results
+
     - name: get current timestamp on localhost
       delegate_to: localhost
       command: date -Iseconds
@@ -59,16 +63,15 @@
 
           #connectivity results
           {% for result in ping_results.results %}
-          Target: {{ result.item }}
-          Status: {% if result.failed is defined and result.failed %}FAILED{% else %}SUCCESS{% endif %}
-          Output:
-          {% if result.stdout_lines is defined %}
-          {% for line in result.stdout_lines %}
-            {{ line }}
-          {% endfor %}
-          {% else %}
-            No output available
-          {% endif %}
+          Target: {{ result.item | trim }}
+          Status: {% if result.packet_loss == "0%" %}SUCCESS{% else %}FAILED{% endif %}
+          Packets: {{ result.packets_tx }} sent / {{ result.packets_rx }} received
+          Loss: {{ result.packet_loss }}
+          Latency (ms): min={{ result.rtt.min }} avg={{ result.rtt.avg }} max={{ result.rtt.max }}
           ----------------------------------------
           {% endfor %}
+
+          #summary
+          Successful: {{ ping_results.results | selectattr('packet_loss', 'equalto', '0%') | list | length }} / {{ target_ips | length }}
+          Failed: {{ ping_results.results | rejectattr('packet_loss', 'equalto', '0%') | list | length }}
         dest: "/tmp/ping_results/{{ inventory_hostname }}_ping_report_{{ current_time.stdout | regex_replace('[:T]', '_') | regex_replace('-', '') }}.txt"
