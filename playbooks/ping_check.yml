@@ -65,6 +65,7 @@
           {% for result in ping_results.results %}
           Target: {{ result.item | trim }}
           Status: {% if result.packet_loss == "0%" %}SUCCESS{% else %}FAILED{% endif %}
+
           Packets: {{ result.packets_tx }} sent / {{ result.packets_rx }} received
           Loss: {{ result.packet_loss }}
           Latency (ms): min={{ result.rtt.min }} avg={{ result.rtt.avg }} max={{ result.rtt.max }}
