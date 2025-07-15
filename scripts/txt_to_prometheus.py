@@ -107,7 +107,7 @@ def main():
     
     base_dir = "/home/sam/Prometheus/router_metrics"
     input_dir = os.path.join(base_dir, "txt_files")
-    output_dir = os.path.join(base_dir, "prom_files")
+    output_dir = "/var/lib/node_exporter/textfile_collector/"
 
     #create output directory 
     os.makedirs(output_dir, exist_ok=True)
