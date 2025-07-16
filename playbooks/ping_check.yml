@@ -43,9 +43,19 @@
       vars:
         ansible_command_timeout: 30
 
-    - name: debug ping_results structure
-      debug:
-        var: ping_results
+    - name: remove /tmp/ping_results directory containing previous router ping.txt metrics
+      delegate_to: localhost
+      file:
+        path: "/tmp/ping_results"
+        state: absent
+      ignore_errors: yes
+
+    - name: recreate ping_results directory
+      delegate_to: localhost
+      file:
+        path: /tmp/ping_results
+        state: directory
+        mode: '0755'
 
     - name: get current timestamp on localhost
       delegate_to: localhost
