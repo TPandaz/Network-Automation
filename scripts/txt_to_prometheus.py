@@ -105,8 +105,7 @@ def convert_ping_report_to_prom(input_path, output_path):
 
 def main():
     
-    base_dir = "/home/sam/Prometheus/router_metrics"
-    input_dir = os.path.join(base_dir, "txt_files")
+    input_dir = "/home/sam/Prometheus/router_metrics"
     output_dir = "/var/lib/node_exporter/textfile_collector/"
 
     #create output directory 
