@@ -45,13 +45,11 @@ set +a
 # Delete existing files on host
 sshpass -p "$SSH_PASSWORD" \
   ssh -o StrictHostKeyChecking=no \
-  -o UserKnownHostsFile=/dev/null \
   sam@192.168.122.1 \
   "rm -f /home/sam/Prometheus/router_metrics/*.txt"
 
 # Copy new results to host
 sshpass -p "$SSH_PASSWORD" \
   scp -o StrictHostKeyChecking=no \
-  -o UserKnownHostsFile=/dev/null \
   /tmp/ping_results/*.txt \
   sam@192.168.122.1:/home/sam/Prometheus/router_metrics/

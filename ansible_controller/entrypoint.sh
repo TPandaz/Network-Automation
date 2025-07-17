@@ -3,6 +3,12 @@
 #exit script if any command returns a non-zero exit code
 set -e
 
+# Check if SSH_PASSWORD is set
+if [ -z "$SSH_PASSWORD" ]; then
+  echo "ERROR: SSH_PASSWORD environment variable not set!" >&2
+  exit 1
+fi
+
 cd /ansible-workspace
 git pull origin main
 
