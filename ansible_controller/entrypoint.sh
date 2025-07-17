@@ -14,8 +14,7 @@ echo "* * * * * root /ansible-workspace/scripts/run_ping_check.sh >> /ansible-wo
 chmod 0644 /etc/cron.d/ping_check
 
 #apply cron job to root's crontab
-crontab /etc/cron.d/ping_check
-service cron start
+cron -f &
 
 #tail the log so output is visible
 tail -F /ansible-workspace/scripts/run_ping_check.log
