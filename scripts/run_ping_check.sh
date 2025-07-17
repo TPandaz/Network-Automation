@@ -36,8 +36,22 @@ done
 #run ansible playbook
 ansible-playbook /ansible-workspace/playbooks/ping_check.yml -i /ansible-workspace/playbooks/templates/inventory.yml
 
-#delete existing .txt files on host before copying new files
-ssh sam@192.168.122.1 "rm -f /home/sam/Prometheus/router_metrics/*.txt"
+#export env variables
+set -a
+#load host password from .env
+source /ansible-workspace/.env
+set +a
 
-#copy results to shared folder that can be access by prometheus
-scp /tmp/ping_results/*.txt sam@192.168.122.1:/home/sam/Prometheus/router_metrics/
+# Delete existing files on host
+sshpass -p "$SSH_PASSWORD" \
+  ssh -o StrictHostKeyChecking=no \
+  -o UserKnownHostsFile=/dev/null \
+  sam@192.168.122.1 \
+  "rm -f /home/sam/Prometheus/router_metrics/*.txt"
+
+# Copy new results to host
+sshpass -p "$SSH_PASSWORD" \
+  scp -o StrictHostKeyChecking=no \
+  -o UserKnownHostsFile=/dev/null \
+  /tmp/ping_results/*.txt \
+  sam@192.168.122.1:/home/sam/Prometheus/router_metrics/
