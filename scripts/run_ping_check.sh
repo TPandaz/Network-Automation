@@ -43,8 +43,7 @@ sshpass -p "$SSH_PASSWORD" \
   ssh -o StrictHostKeyChecking=no \
   -o PreferredAuthentications=password \
   -o PubkeyAuthentication=no \
-  -T \  # Disable pseudo-terminal
-  sam@192.168.122.1 \
+  -T "sam@192.168.122.1" \
   "rm -f /home/sam/Prometheus/router_metrics/*.txt"
 
 #copy files 
