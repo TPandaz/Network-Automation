@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export ANSIBLE_HOST_KEY_CHECKING=False
+export SSH_ASKPASS="/bin/false"
+export DISPLAY="none"
 
 SSH_USER=sam
 SSH_PASS=sam
@@ -36,20 +38,19 @@ done
 #run ansible playbook
 ansible-playbook /ansible-workspace/playbooks/ping_check.yml -i /ansible-workspace/playbooks/templates/inventory.yml
 
-#export env variables
-set -a
-#load host password from .env
-source /ansible-workspace/.env
-set +a
-
-# Delete existing files on host
+#delete files
 sshpass -p "$SSH_PASSWORD" \
   ssh -o StrictHostKeyChecking=no \
+  -o PreferredAuthentications=password \
+  -o PubkeyAuthentication=no \
+  -T \  # Disable pseudo-terminal
   sam@192.168.122.1 \
   "rm -f /home/sam/Prometheus/router_metrics/*.txt"
 
-# Copy new results to host
+#copy files 
 sshpass -p "$SSH_PASSWORD" \
   scp -o StrictHostKeyChecking=no \
+  -o PreferredAuthentications=password \
+  -o PubkeyAuthentication=no \
   /tmp/ping_results/*.txt \
   sam@192.168.122.1:/home/sam/Prometheus/router_metrics/
